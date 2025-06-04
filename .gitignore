@@ -134,3 +134,15 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+/target
+*.log
+*.class
+*.jar
+.idea/
+*.iml
+*.war
+node_modules/
+dist/
+.env
+
