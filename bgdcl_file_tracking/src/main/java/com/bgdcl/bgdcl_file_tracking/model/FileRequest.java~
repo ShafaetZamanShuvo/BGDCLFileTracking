@@ -1,0 +1,113 @@
+package com.bgdcl.bgdcl_file_tracking.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+@Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class FileRequest implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "file_code", nullable = false)
+    private String fileCode;
+
+    @Column(name = "requesting_department_id", nullable = false)
+    private Long requestingDepartmentId;
+
+    @Column(name = "requested_from_department_id", nullable = false)
+    private Long requestedFromDepartmentId;
+
+    @Column(name = "requesting_user_id", nullable = false)
+    private Long requestingUserId;
+
+    @Column(name = "request_time", nullable = false)
+    private LocalDateTime requestTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "request_status")
+    private RequestStatus status = RequestStatus.pending;
+
+    @Column(name = "notes")
+    private String notes;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getFileCode() {
+        return fileCode;
+    }
+
+    public void setFileCode(String fileCode) {
+        this.fileCode = fileCode;
+    }
+
+    public Long getRequestingDepartmentId() {
+        return requestingDepartmentId;
+    }
+
+    public void setRequestingDepartmentId(Long requestingDepartmentId) {
+        this.requestingDepartmentId = requestingDepartmentId;
+    }
+
+    public Long getRequestedFromDepartmentId() {
+        return requestedFromDepartmentId;
+    }
+
+    public void setRequestedFromDepartmentId(Long requestedFromDepartmentId) {
+        this.requestedFromDepartmentId = requestedFromDepartmentId;
+    }
+
+    public Long getRequestingUserId() {
+        return requestingUserId;
+    }
+
+    public void setRequestingUserId(Long requestingUserId) {
+        this.requestingUserId = requestingUserId;
+    }
+
+    public LocalDateTime getRequestTime() {
+        return requestTime;
+    }
+
+    public void setRequestTime(LocalDateTime requestTime) {
+        this.requestTime = requestTime;
+    }
+
+    public RequestStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RequestStatus status) {
+        this.status = status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public String getRequestStatus() {
+        return status.name();
+    }
+}

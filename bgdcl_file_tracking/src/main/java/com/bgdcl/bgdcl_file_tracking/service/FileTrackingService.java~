@@ -1,0 +1,317 @@
+package com.bgdcl.bgdcl_file_tracking.service;
+
+import com.bgdcl.bgdcl_file_tracking.dto.FileRequestDTO;
+import com.bgdcl.bgdcl_file_tracking.dto.FileTrackingDTO;
+import com.bgdcl.bgdcl_file_tracking.exception.ResourceNotFoundException;
+import com.bgdcl.bgdcl_file_tracking.model.*;
+import com.bgdcl.bgdcl_file_tracking.repository.*;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+public class FileTrackingService {
+
+    @Autowired
+    private FileTrackingRepository fileTrackingRepository;
+
+    @Autowired
+    private FileTransactionRepository fileTransactionRepository;
+
+    @Autowired
+    private DepartmentRepository departmentRepository;
+
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Autowired
+    private ZoneRepository zoneRepository;
+
+    @Autowired
+    private CustomerFileRepository customerFileRepository;
+
+    @Autowired
+    private FileRequestRepository fileRequestRepository;
+
+    // Find file by code
+
+    // Get file's current status with department info
+    public Map<String, Object> getFileStatus(String oldCode) {
+        // Find the file by the old code
+        FileTracking file = findFileByCode(oldCode);
+
+        // If file is not found, return an error response
+        if (file == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "File not found");
+            return errorResponse;
+        }
+
+        // Retrieve the department information based on the current department ID
+        Department department = departmentRepository.findById(file.getCurrentDepartmentId().longValue())
+                .orElse(null);
+
+        CustomerFile customerFile = (CustomerFile) customerFileRepository.findByOldCode(oldCode)
+                .orElse(null);
+
+        //check if this file is requested
+        List<FileRequest> fileRequests = fileRequestRepository.findByFileCodeAndStatus(oldCode, RequestStatus.pending);
+
+        //check last sent from department from movement history
+        List<FileTransaction> transactions = fileTransactionRepository.findByOldCodeOrderByTransactionTimeDesc(oldCode);
+
+        FileTransaction lastTransaction = null;
+        if (transactions != null && !transactions.isEmpty()) {
+            lastTransaction = transactions.get(0);
+        }
+
+        // Prepare the status map with the file information
+        Map<String, Object> status = new HashMap<>();
+        status.put("fileId", file.getId());
+        status.put("fileCode", file.getOldCode());
+        status.put("status", file.getCurrentStatus());
+        status.put("currentDepartment", department != null ? department.getName() : "Unknown");
+        status.put("currentDepartmentId", file.getCurrentDepartmentId());
+        status.put("zone", customerFile != null ? customerFile.getZone() : "Unknown");
+        status.put("customerName", customerFile != null ? customerFile.getCustomerName() : "Unknown");
+        status.put("customerNewCode", customerFile != null ? customerFile.getCustomerCode() : "Unknown");
+        status.put("fileRequests", fileRequests != null ? fileRequests : "Unknown");
+        status.put("lastTransaction", lastTransaction != null ? lastTransaction : "Unknown");
+
+        return status;
+    }
+
+
+    // Transfer file between departments (check out/in)
+    @Transactional
+    public FileTransaction transferFile(String oldCode, Long fromDeptId, Long toDeptId,
+                                        Long fromUserId, Long toUserId, String remarks) {
+
+        //there can be request for this file before transfer or not, if there is request, then we need to update the request status to accepted
+        List<FileRequest> fileRequests = fileRequestRepository.findByFileCodeAndStatusAndRequestingDepartmentId(oldCode, RequestStatus.pending, toDeptId);
+
+        if (fileRequests != null && !fileRequests.isEmpty()) {
+            for (FileRequest fileRequest : fileRequests) {
+                fileRequest.setStatus(RequestStatus.approved);
+                fileRequestRepository.save(fileRequest);
+            }
+        }
+
+        // Get file
+        FileTracking file = findFileByCode(oldCode);
+
+        // Create transaction record
+        FileTransaction transaction = new FileTransaction();
+        transaction.setOldCode(oldCode);
+        transaction.setFromDepartmentId(fromDeptId);
+        transaction.setToDepartmentId(toDeptId);
+        transaction.setFromUserId(fromUserId);
+        transaction.setToUserId(toUserId);
+        transaction.setTransactionTime(LocalDateTime.now());
+        transaction.setRemarks(remarks);
+
+        // Save transaction
+        FileTransaction savedTransaction = fileTransactionRepository.save(transaction);
+
+        // Update file status - now set to PENDING acceptance
+        file.setCurrentDepartmentId(toDeptId.intValue());
+        file.setCurrentStatus(FileStatus.pending);
+        file.setPendingAcceptance(true);
+        file.setLastUpdated(LocalDateTime.now());
+       FileTracking savedFile = fileTrackingRepository.save(file);
+
+        return savedTransaction;
+    }
+
+    // Get file movement history
+    public List<Map<String, Object>> getFileHistory(String oldCode) {
+        List<FileTransaction> transactions = fileTransactionRepository.findByOldCodeAndDifferentUsers(oldCode);
+        List<Map<String, Object>> history = new ArrayList<>();
+
+        for (FileTransaction transaction : transactions) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("transactionId", transaction.getId());
+            entry.put("dateTime", transaction.getTransactionTime());
+            entry.put("fromUserId", transaction.getFromUserId());
+            entry.put("toUserId", transaction.getToUserId());
+            entry.put("fromUser", userDetailsService.getUserDetails(transaction.getFromUserId()));
+            entry.put("toUser", userDetailsService.getUserDetails(transaction.getToUserId()));
+
+            Department fromDept = departmentRepository.findById(transaction.getFromDepartmentId()).orElse(null);
+            Department toDept = departmentRepository.findById(transaction.getToDepartmentId()).orElse(null);
+
+            entry.put("fromDepartment", fromDept != null ? fromDept.getName() : "Unknown");
+            entry.put("toDepartment", toDept != null ? toDept.getName() : "Unknown");
+            entry.put("remarks", transaction.getRemarks());
+
+            history.add(entry);
+        }
+
+        return history;
+    }
+
+    @Transactional
+    public FileTracking acceptFile(String fileCode, Long departmentId, Long userId, boolean accept, String notes) {
+        FileTracking file = findFileByCode(fileCode);
+
+        // Validate that the file is pending acceptance in this department
+        if (!file.isPendingAcceptance() || !file.getCurrentDepartmentId().equals(departmentId.intValue())) {
+            throw new IllegalStateException("File is not pending acceptance in this department");
+        }
+
+        if (accept) {
+            file.setCurrentStatus(FileStatus.in);
+            file.setPendingAcceptance(false);
+        } else {
+            // If rejected, we could implement a rejection flow here
+            // For now, let's just leave it pending
+            file.setCurrentStatus(FileStatus.pending);
+        }
+
+        file.setLastUpdated(LocalDateTime.now());
+
+        // Log the acceptance/rejection in transactions
+        FileTransaction transaction = new FileTransaction();
+        transaction.setOldCode(fileCode);
+        transaction.setFromDepartmentId(departmentId);
+        transaction.setToDepartmentId(departmentId); // Same department for acceptance
+        transaction.setFromUserId(userId); // System operation
+        transaction.setToUserId(userId);
+        transaction.setTransactionTime(LocalDateTime.now());
+        transaction.setRemarks(accept ? "File accepted" : "File acceptance rejected: " + notes);
+        fileTransactionRepository.save(transaction);
+
+        return fileTrackingRepository.save(file);
+    }
+
+    @Transactional
+    public List<FileTracking> acceptBatchFiles(List<String> fileCodes, Long departmentId,
+                                               Long userId, boolean accept, String notes) {
+        List<FileTracking> updatedFiles = new ArrayList<>();
+
+        for (String fileCode : fileCodes) {
+            try {
+                FileTracking updatedFile = acceptFile(fileCode, departmentId, userId, accept, notes);
+                updatedFiles.add(updatedFile);
+            } catch (Exception e) {
+                // Log error and continue with next file
+                // Consider adding a batch result object to capture successes and failures
+            }
+        }
+
+        return updatedFiles;
+    }
+
+    @Transactional
+    public FileRequest requestFile(String fileCode, Long requestingDeptId,
+                                   Long requestedFromDeptId, Long requestingUserId, String notes) {
+        // Check if file exists
+        FileTracking file = findFileByCode(fileCode);
+
+        // Validate that file is in the requested department
+        if (!file.getCurrentDepartmentId().equals(requestedFromDeptId.intValue())) {
+            throw new IllegalStateException("File is not in the requested department");
+        }
+
+        // Create request
+        FileRequest request = new FileRequest();
+        request.setFileCode(fileCode);
+        request.setRequestingDepartmentId(requestingDeptId);
+        request.setRequestedFromDepartmentId(requestedFromDeptId);
+        request.setRequestingUserId(requestingUserId);
+        request.setRequestTime(LocalDateTime.now());
+        request.setStatus(RequestStatus.pending);
+        request.setNotes(notes);
+
+        return fileRequestRepository.save(request);
+    }
+
+    public List<FileRequest> getRequestsForDepartment(Long departmentId) {
+        return fileRequestRepository.findByRequestedFromDepartmentIdAndStatus(
+                departmentId, RequestStatus.pending);
+    }
+
+    public List<FileTracking> getPendingAcceptanceFiles(Long departmentId) {
+        return fileTrackingRepository.findByCurrentDepartmentIdAndPendingAcceptanceTrue(departmentId.intValue());
+    }
+
+    private FileTracking findFileByCode(String oldCode) {
+        return fileTrackingRepository.findByOldCode(oldCode);
+    }
+
+    public List<FileRequestDTO> getDetailedRequestsForDepartment(Long departmentId) {
+        List <FileRequest> requests = fileRequestRepository.findByRequestedFromDepartmentIdAndStatus(
+                departmentId, RequestStatus.pending);
+        List <FileRequestDTO> requestDTOs = new ArrayList<>();
+
+        for (FileRequest request : requests) {
+
+            //first check if the file is in current department
+            FileTracking file = findFileByCode(request.getFileCode());
+
+            if (!file.getCurrentDepartmentId().equals(departmentId.intValue()) && !file.getCurrentStatus().equals(FileStatus.in)) {
+                continue;
+            }
+
+            FileRequestDTO requestDTO = new FileRequestDTO();
+            requestDTO.setFileCode(request.getFileCode());
+            requestDTO.setRequestingUserId(request.getRequestingUserId());
+            requestDTO.setRequestingDepartmentId(request.getRequestingDepartmentId());
+            requestDTO.setRequestedFromDepartmentId(request.getRequestedFromDepartmentId());
+            requestDTO.setRequestTime(request.getRequestTime());
+            requestDTO.setStatus(request.getRequestStatus());
+            requestDTO.setNotes(request.getNotes());
+            requestDTO.setRequestingDepartmentName(departmentRepository.findById(request.getRequestingDepartmentId()).get().getName());
+
+            requestDTOs.add(requestDTO);
+        }
+        return requestDTOs;
+    }
+
+    public Page<FileTracking> getFilesByDepartmentIdAndStatusAndPendingAcceptance(
+            Long departmentId, FileStatus status, boolean pendingAcceptance, Pageable pageable) {
+
+        return fileTrackingRepository.findByCurrentDepartmentIdAndCurrentStatusAndPendingAcceptance(
+                departmentId.intValue(), status, pendingAcceptance, pageable);
+    }
+
+    public Page<FileTrackingDTO> getFileTrackingWithCustomerInfo(
+            Long departmentId, FileStatus status, boolean pendingAcceptance, Pageable pageable) {
+
+        Page<FileTracking> fileTrackingPage = fileTrackingRepository.findByCurrentDepartmentIdAndCurrentStatusAndPendingAcceptance(
+                departmentId.intValue(), status, pendingAcceptance, pageable);
+
+        // Convert to DTOs with customer information
+        List<FileTrackingDTO> dtoList = fileTrackingPage.getContent().stream()
+                .map(fileTracking -> {
+                    // Find matching customer file
+                    CustomerFile customerFile = customerFileRepository.findByOldCode(fileTracking.getOldCode())
+                            .orElse(null);
+
+                    // Create and return DTO with combined information
+                    return new FileTrackingDTO(fileTracking, customerFile);
+                })
+                .collect(Collectors.toList());
+
+        // Create a new Page with DTOs
+        return new PageImpl<>(dtoList, pageable, fileTrackingPage.getTotalElements());
+    }
+
+    @Transactional
+    public Boolean returnFile(String fileCode, Long fromDepartmentId) {
+        //first delete the entry in file transaction table where oldCode = fileCode and fromDepartmentId = fromDepartmentId
+        fileTransactionRepository.deleteByOldCodeAndFromDepartmentId(fileCode, fromDepartmentId);
+        //then update the file tracking table where oldCode = fileCode and currentDepartmentId = fromDepartmentId, make status in and pendingAcceptance false
+        return fileTrackingRepository.updateFileStatus(fileCode, fromDepartmentId, FileStatus.in, false);
+    }
+}

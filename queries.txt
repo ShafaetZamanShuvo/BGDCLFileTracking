@@ -1,0 +1,50 @@
+-- Recording a file leaving the department
+BEGIN TRANSACTION;
+
+-- Create movement record
+INSERT INTO FileMovements (file_id, checkout_date, checkout_by, checkout_to, expected_return_date, notes)
+VALUES (42, '2025-04-09 10:15:00', 7, 'Legal Department', '2025-04-16', 'Requested for contract review');
+
+-- Update file status
+UPDATE Files
+SET current_location = 3, current_status = 'Checked Out'
+WHERE file_id = 42;
+
+COMMIT;
+
+-- Recording a file returning to the department
+BEGIN TRANSACTION;
+
+-- Update existing movement record with return information
+UPDATE FileMovements
+SET checkin_date = '2025-04-15 14:30:00', checkin_by = 12
+WHERE file_id = 42 AND checkin_date IS NULL;
+
+-- Update file status
+UPDATE Files
+SET current_location = 1, current_status = 'In Department'
+WHERE file_id = 42;
+
+COMMIT;
+
+-- Query to locate a specific file and its movement history
+SELECT f.file_name, f.file_number, f.current_status, l.location_name,
+       (SELECT COUNT(*) FROM FileMovements WHERE file_id = f.file_id) AS total_movements
+FROM Files f
+JOIN Locations l ON f.current_location = l.location_id
+WHERE f.file_number = 'FIN-2025-042';
+
+-- Getting the movement history
+SELECT fm.checkout_date, u1.full_name AS checkout_by, fm.checkout_to,
+       fm.checkin_date, u2.full_name AS checkin_by, fm.notes
+FROM FileMovements fm
+LEFT JOIN Users u1 ON fm.checkout_by = u1.user_id
+LEFT JOIN Users u2 ON fm.checkin_by = u2.user_id
+WHERE fm.file_id = 42
+ORDER BY fm.checkout_date DESC;
+
+Movement ID | Checkout Date      | Checked Out By | Checkout To        | Expected Return  | Checkin Date       | Checked In By | Notes
+-----------------------------------------------------------------------------------------------------------------------------
+1           | 2025-04-09 09:30   | Rahim Mia      | Board Department   | 2025-04-11      | NULL               | NULL          | For board review and approval
+2           | 2025-04-10 11:15   | Karim Mia      | Sales Department   | 2025-04-12      | NULL               | NULL          | For sales forecast reconciliation
+3           | 2025-04-12 14:45   | Abdul Mia      | Revenue Department | 2025-04-12      | 2025-04-12 14:45   | Abdul Mia     | Completed sales reconciliation

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BGDCL - Customer File Tracking System</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .toggle-button {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 30px;
+    }
+    .toggle-button input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    input:checked + .slider:before {
+      transform: translateX(30px);
+    }
+    .history-modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 900px;
+      border-radius: 8px;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: black;
+    }
+    .toggle-action-btn {
+      display: inline-block;
+      cursor: pointer;
+    }
+    .transaction-form-modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .transaction-form-content {
+      background-color: #fefefe;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <div class="flex items-center">
+        <img src="bgdcl.jpeg" alt="Company Logo" class="h-12 w-auto mr-3">
+        <div>
+          <h1 class="text-xl font-bold text-gray-800">Bakhrabad Gas Distribution Company Limited</h1>
+          <p class="text-sm text-gray-600">Customer File Tracking System</p>
+        </div>
+      </div>
+      <div class="flex items-center">
+        <span class="text-gray-700 mr-2">Admin User</span>
+        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Search Section -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <h2 class="text-lg font-bold mb-4">Search Files</h2>
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1">
+          <input type="text" placeholder="Enter Customer Code or Old Code" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md">
+          <i class="fas fa-search mr-2"></i>Search
+        </button>
+      </div>
+    </div>
+
+    <!-- File Transaction History Search -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <h2 class="text-lg font-bold mb-4">File Transaction History</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+          <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+          <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="flex items-end">
+          <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md w-full">
+            <i class="fas fa-history mr-2"></i>View Transaction History
+          </button>
+        </div>
+      </div>
+      <div class="flex gap-4 text-sm">
+        <button class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded-md">
+          <i class="fas fa-file-import mr-1"></i>Files In
+        </button>
+        <button class="bg-orange-100 hover:bg-orange-200 text-orange-800 px-4 py-2 rounded-md">
+          <i class="fas fa-file-export mr-1"></i>Files Out
+        </button>
+        <button class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-4 py-2 rounded-md">
+          <i class="fas fa-exchange-alt mr-1"></i>All Transactions
+        </button>
+      </div>
+    </div>
+
+    <!-- File Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+        <h2 class="text-lg font-bold">Customer Files</h2>
+        <div class="flex items-center">
+          <span class="text-sm text-gray-500 mr-4">Total Files: 245</span>
+          <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md text-sm flex items-center">
+            <i class="fas fa-plus mr-1"></i> Add New File
+          </button>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Old Code</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Name</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Code</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zone</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <!-- Row 1 -->
+            <tr data-file-id="BG-1245">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BG-1245</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Abdul Karim</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">CUST-10087</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">North Zone</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="toggle-action-btn mr-2" data-file-id="BG-1245" data-current-status="in">
+                    <span class="status-indicator-in px-2 py-1 rounded-full bg-green-100 text-green-800">In</span>
+                    <span class="status-indicator-out px-2 py-1 rounded-full bg-red-100 text-red-800 hidden">Out</span>
+                  </div>
+                  <label class="toggle-button">
+                    <input type="checkbox" class="toggle-status-checkbox" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="dept-name text-sm">-</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button class="text-indigo-600 hover:text-indigo-900 mr-3 view-history" data-id="BG-1245">
+                  <i class="fas fa-history"></i> History
+                </button>
+              </td>
+            </tr>
+            
+            <!-- Row 2 -->
+            <tr data-file-id="BG-2376">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BG-2376</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mohammad Ali</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">CUST-12458</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">East Zone</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="toggle-action-btn mr-2" data-file-id="BG-2376" data-current-status="out">
+                    <span class="status-indicator-in px-2 py-1 rounded-full bg-green-100 text-green-800 hidden">In</span>
+                    <span class="status-indicator-out px-2 py-1 rounded-full bg-red-100 text-red-800">Out</span>
+                  </div>
+                  <label class="toggle-button">
+                    <input type="checkbox" class="toggle-status-checkbox">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="dept-name text-sm">Engineering</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button class="text-indigo-600 hover:text-indigo-900 mr-3 view-history" data-id="BG-2376">
+                  <i class="fas fa-history"></i> History
+                </button>
+              </td>
+            </tr>
+            
+            <!-- Row 3 -->
+            <tr data-file-id="BG-3587">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BG-3587</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Fatima Begum</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">CUST-15632</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">South Zone</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="toggle-action-btn mr-2" data-file-id="BG-3587" data-current-status="in">
+                    <span class="status-indicator-in px-2 py-1 rounded-full bg-green-100 text-green-800">In</span>
+                    <span class="status-indicator-out px-2 py-1 rounded-full bg-red-100 text-red-800 hidden">Out</span>
+                  </div>
+                  <label class="toggle-button">
+                    <input type="checkbox" class="toggle-status-checkbox" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="dept-name text-sm">-</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button class="text-indigo-600 hover:text-indigo-900 mr-3 view-history" data-id="BG-3587">
+                  <i class="fas fa-history"></i> History
+                </button>
+              </td>
+            </tr>
+            
+            <!-- Additional rows would go here -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">245</span> results
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Previous</span>
+                <i class="fas fa-chevron-left"></i>
+              </a>
+              <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-indigo-600 hover:bg-indigo-50">1</a>
+              <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">2</a>
+              <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">3</a>
+              <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+              <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">24</a>
+              <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">25</a>
+              <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Next</span>
+                <i class="fas fa-chevron-right"></i>
+              </a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- History Modal -->
+  <div id="historyModal" class="history-modal">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">File Transaction History</h2>
+        <span class="close">&times;</span>
+      </div>
+      <div class="mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <p class="font-medium">File ID: <span class="text-indigo-600" id="historyFileId">BG-1245</span></p>
+            <p class="font-medium">Customer: <span class="text-gray-600">Abdul Karim (CUST-10087)</span></p>
+          </div>
+          <div>
+            <p class="font-medium">Zone: <span class="text-gray-600">North Zone</span></p>
+            <p class="font-medium">Current Status: <span class="text-green-600">In Office</span></p>
+          </div>
+          
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Handler</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200" id="historyTableBody">
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-02-15 14:25</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-sm rounded-full bg-green-100 text-green-800">File In</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Customer Service</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mahfuz Rahman</td>
+              <td class="px-6 py-4 text-sm text-gray-500">Returned after verification</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-02-10 09:12</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-sm rounded-full bg-red-100 text-red-800">File Out</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Customer Service</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Sharmin Akter</td>
+              <td class="px-6 py-4 text-sm text-gray-500">For address verification</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-01-25 11:45</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-sm rounded-full bg-green-100 text-green-800">File In</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Engineering</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Kamrul Hasan</td>
+              <td class="px-6 py-4 text-sm text-gray-500">Inspection completed</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-01-18 10:20</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-sm rounded-full bg-red-100 text-red-800">File Out</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Engineering</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Farid Ahmed</td>
+              <td class="px-6 py-4 text-sm text-gray-500">For site inspection</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction Form Modal -->
+  <div id="transactionFormModal" class="transaction-form-modal">
+    <div class="transaction-form-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold" id="transactionFormTitle">File Transaction</h2>
+        <span class="close transaction-close">&times;</span>
+      </div>
+      <form id="transactionForm" class="space-y-4">
+        <input type="hidden" id="transactionFileId" name="fileId">
+        <input type="hidden" id="transactionType" name="transactionType">
+        
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <p class="font-medium mb-2">File: <span class="text-indigo-600" id="formFileId">BG-1245</span></p>
+            <p class="font-medium mb-2">Customer: <span class="text-gray-600" id="formCustomerName">Abdul Karim (CUST-10087)</span></p>
+            <p class="font-medium mb-4" id="transactionStatusText">Current Status: <span class="text-green-600">In Office</span></p>
+            <p class="font-medium mb-4" id="transactionDepartmentText">Current Department: <span class="text-green-600">Revenue Control</span></p> 
+          </div>
+
+          <!-- Add a date and time picker -->
+          <div>
+            <label for="dateTime" class="block text-sm font-medium text-gray-700 mb-1">Date and Time</label>
+            <input type="datetime-local" id="dateTime" name="dateTime" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          
+          <!-- Department Selection - Only shown for "Out" transactions -->
+          <div id="departmentSelectContainer" >
+            <label for="departmentSelect" class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+            <select id="departmentSelect" name="department" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Select Department</option>
+              <option value="finance">Finance</option>
+              <option value="engineering">Engineering</option>
+              <option value="customer_service">Customer Service</option>
+              <option value="legal">Legal</option>
+              <option value="operations">Operations</option>
+            </select>
+          </div>
+          
+          <!-- Handler Name - Always shown -->
+          <div>
+            <label for="handlerName" class="block text-sm font-medium text-gray-700 mb-1">Handler Name</label>
+            <input type="text" id="handlerName" name="handlerName" placeholder="Enter handler's name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          
+          <!-- Notes - Always shown -->
+          <div>
+            <label for="transactionNotes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea id="transactionNotes" name="notes" rows="3" placeholder="Enter transaction notes" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" class="transaction-close-btn bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md">Cancel</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function() {
+      // Toggle checkbox functionality
+      $(".toggle-status-checkbox").change(function() {
+        const row = $(this).closest('tr');
+        const fileId = row.data('file-id');
+        const toggleActionBtn = row.find('.toggle-action-btn');
+        const currentStatus = toggleActionBtn.data('current-status');
+        
+        // Prepare modal for transaction
+        $("#formFileId").text(fileId);
+        $("#formCustomerName").text(row.find('td:nth-child(2)').text() + ' (' + row.find('td:nth-child(3)').text() + ')');
+        $("#transactionFileId").val(fileId);
+        
+        if ($(this).is(':checked')) {
+          // Changing to IN
+          $("#transactionType").val('in');
+          $("#transactionFormTitle").text('File Check-In');
+          $("#transactionStatusText").html('Current Status: <span class="text-red-600">Out of Office</span>');
+          $("#transactionDepartmentText").removeClass('hidden');
+          
+        } else {
+          // Changing to OUT
+          $("#transactionType").val('out');
+          $("#transactionFormTitle").text('File Check-Out');
+          $("#transactionStatusText").html('Current Status: <span class="text-green-600">In Office</span>');
+          $("#transactionDepartmentText").removeClass('hidden');
+          
+        }
+
+        // History modal functionality
+      $(".view-history").click(function() {
+        const fileId = $(this).data('id');
+        $("#historyFileId").text(fileId);
+        $("#historyModal").fadeIn();
+      });
+      
+      $(".close").click(function() {
+        $("#historyModal").fadeOut();
+      });
+      
+      $(window).click(function(e) {
+        if ($(e.target).is('.history-modal')) {
+          $(".history-modal").fadeOut();
+        }
+      });
+        
+        // Show the transaction form modal
+        $("#transactionFormModal").fadeIn();
+        
+        // Reset the checkbox to original state until transaction is completed
+        if (currentStatus === 'in') {
+          $(this).prop('checked', true);
+        } else {
+          $(this).prop('checked', false);
+        }
+      });
+
+      // Close the transaction form modal
+      $(".transaction-close-btn").click(function() {
+        $("#transactionFormModal").fadeOut();
+      });
+
+      $(".transaction-close").click(function() {
+        $("#transactionFormModal").fadeOut();
+      });
+
+      
+      
+      // Transaction form submission
+      $("#transactionForm").submit(function(e) {
+        e.preventDefault();
+        
+        const fileId = $("#transactionFileId").val();
+        const transactionType = $("#transactionType").val();
+        const handlerName = $("#handlerName").val();
+        const notes = $("#transactionNotes").val();
+        const department = $("#departmentSelect").val();
+        
+        // Validation
+        if (!handlerName) {
+          alert("Handler name is required!");
+          return;
+        }
+        
+        if (transactionType === 'out' && !department) {
+          alert("Please select a department!");
+          return;
+        }
+        
+        // Process transaction
+        const row = $(`tr[data-file-id="${fileId}"]`);
+        const toggleActionBtn = row.find('.toggle-action-btn');
+        const checkbox = row.find('.toggle-status-checkbox');
+        
+        if (transactionType === 'out') {
+          // Update UI for OUT transaction
+          toggleActionBtn.data('current-status', 'out');
+          row.find('.status-indicator-in').addClass('hidden');
+          row.find('.status-indicator-out').removeClass('hidden');
+          checkbox.prop('checked', false);
+          row.find('.dept-name').text($("#departmentSelect option:selected").text());
+          
+          // Add to history
+          addHistoryEntry(fileId, 'out', department, handlerName, notes);
+        } else {
+          // Update UI for IN transaction
+          toggleActionBtn.data('current-status', 'in');
+          row.find('.status-indicator-in').removeClass('hidden');
+          row.find('.status-indicator-out').addClass('hidden');
+          checkbox.prop('checked', true);
+          row.find('.dept-name').text('-');
+          
+          // Add to history
+          addHistoryEntry(fileId, 'in', '', handlerName, notes);
+        }
+        
+        // Close the transaction form modal
+        $("#transactionFormModal").fadeOut();
+      });
+    });
+  </script>
+</body>
+</html>
+
