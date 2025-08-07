@@ -215,12 +215,12 @@ const clearSearch = () => {
                                                     <i class="bi bi-check me-2"></i>
                                                     Accept
                                                 </button>
-                                                <button 
+                                                <!-- <button 
                                                     @click="handleFileAction(file, false)" 
                                                     class="btn btn-danger btn-sm">
                                                     <i class="bi bi-x-circle me-2"></i>
                                                     Reject
-                                                </button>
+                                                </button> -->
                                             </div>
                                         </td>
                                     </tr>

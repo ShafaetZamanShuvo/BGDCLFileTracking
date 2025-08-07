@@ -8,7 +8,7 @@ export default {
   async getFileStatus(fileCode) {
     const token = localStorage.getItem("authToken");
     try {
-      const response = await axios.get(`http://localhost:8081/api/files/${fileCode}/status`, {
+      const response = await axios.get(`${API_URL}/api/files/${fileCode}/status`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

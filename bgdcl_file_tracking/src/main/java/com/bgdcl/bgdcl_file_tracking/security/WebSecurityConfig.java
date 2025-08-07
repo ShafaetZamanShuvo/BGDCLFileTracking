@@ -4,6 +4,7 @@ import com.bgdcl.bgdcl_file_tracking.security.jwt.AuthEntryPointJwt;
 import com.bgdcl.bgdcl_file_tracking.security.jwt.AuthTokenFilter;
 import com.bgdcl.bgdcl_file_tracking.security.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -34,6 +35,10 @@ public class WebSecurityConfig {
   @Autowired
   private AuthEntryPointJwt unauthorizedHandler;
 
+  @Value("${app.cors.allowedOrigin}")
+  private String allowedOrigin;
+
+
   @Bean
   public AuthTokenFilter authenticationJwtTokenFilter() {
     return new AuthTokenFilter();
@@ -57,21 +62,38 @@ public class WebSecurityConfig {
     return new BCryptPasswordEncoder();
   }
 
-  @Bean
+    @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http.cors(cors -> cors.configurationSource(corsConfigurationSource())) // Add this line
+    http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth ->
-                    auth.requestMatchers("/api/auth/**").permitAll()
-                            .requestMatchers("/api/test/**").permitAll()
-                            .requestMatchers("/swagger-ui/**").permitAll()
-                            .requestMatchers("/swagger-ui.html").permitAll()
-                            .requestMatchers("/v3/api-docs/**").permitAll()  // OpenAPI endpoint
-                            .requestMatchers("/swagger-resources/**").permitAll()  // Swagger resources
-                            .requestMatchers("/webjars/**").permitAll()  // Swagger UI webjars
-                            .anyRequest().authenticated()
+            .authorizeHttpRequests(auth -> auth
+                    // Vue 3 static resources
+                    .requestMatchers(
+                            "/",
+                            "/index.html",
+                            "/favicon.ico",
+                            "/assets/**",
+                            "/js/**",
+                            "/css/**",
+                            "/images/**"
+                    ).permitAll()
+
+                    // Swagger & Auth APIs
+                    .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/api/test/**").permitAll()
+                    .requestMatchers("/swagger-ui/**").permitAll()
+                    .requestMatchers("/swagger-ui.html").permitAll()
+                    .requestMatchers("/v3/api-docs/**").permitAll()
+                    .requestMatchers("/swagger-resources/**").permitAll()
+                    .requestMatchers("/webjars/**").permitAll()
+
+                    // Pre-flight requests
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                    // All other endpoints require auth
+                    .anyRequest().authenticated()
             );
 
     http.authenticationProvider(authenticationProvider());
@@ -80,10 +102,12 @@ public class WebSecurityConfig {
     return http.build();
   }
 
+
+
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(Arrays.asList("http://localhost:5174")); // Your frontend origin
+    configuration.setAllowedOrigins(Arrays.asList(allowedOrigin));
     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
     configuration.setAllowCredentials(true); // Allow credentials if needed
@@ -93,3 +117,7 @@ public class WebSecurityConfig {
     return source;
   }
 }
+
+
+
+

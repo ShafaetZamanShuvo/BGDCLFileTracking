@@ -30,7 +30,7 @@ import com.bgdcl.bgdcl_file_tracking.repository.UserRepository;
 import com.bgdcl.bgdcl_file_tracking.security.jwt.JwtUtils;
 import com.bgdcl.bgdcl_file_tracking.security.services.UserDetailsImpl;
 
-@CrossOrigin(origins = "http://localhost:5174", maxAge = 3600)
+//@CrossOrigin(origins = "http://localhost:5174", maxAge = 3600)
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
