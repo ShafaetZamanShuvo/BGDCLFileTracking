@@ -18,4 +18,24 @@ public class DesignationService {
         return designationRepository.findAll();
     }
 
+    public Designation addDesignation(Designation designation) {
+        return designationRepository.save(designation);
+    }
+
+    public Designation updateDesignation(Designation designation) {
+        // TODO: update designation
+        //first find the designation by id
+        Designation existingDesignation = designationRepository.findById(designation.getId()).orElse(null);
+        if (existingDesignation != null) {
+            existingDesignation.setName(designation.getName());
+            existingDesignation.setStatus(designation.getStatus());
+            return designationRepository.save(existingDesignation);
+        } else {
+            return null;
+        }
+    }
+    
+    public void deleteDesignation(Long id) {
+        designationRepository.deleteById(id);
+    }
 }

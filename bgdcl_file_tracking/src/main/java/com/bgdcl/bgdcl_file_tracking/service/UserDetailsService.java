@@ -72,4 +72,8 @@ public class UserDetailsService {
         }
         return userInfoDTOList;
     }
+
+    public UserInfo addUserInfo(UserInfo userInfo) {
+        return userInfoRepository.save(userInfo);
+    }
 }

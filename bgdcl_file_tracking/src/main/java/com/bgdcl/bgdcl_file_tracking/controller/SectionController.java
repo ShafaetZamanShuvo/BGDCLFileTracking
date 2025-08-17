@@ -6,10 +6,7 @@ import com.bgdcl.bgdcl_file_tracking.service.DepartmentService;
 import com.bgdcl.bgdcl_file_tracking.service.SectionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -31,6 +28,16 @@ public class SectionController {
     public ResponseEntity<List<Section>> getSectionByDepartmentId(@PathVariable Long id) {
         List<Section> sections = sectionService.getSectionByDepartmentId(id);
         return ResponseEntity.ok().body(sections);
+    }
+
+    //add section
+    @GetMapping("/add-section")
+    public ResponseEntity<Section> addSection(@RequestBody Section section) {
+        try {
+            return ResponseEntity.ok().body(sectionService.addSection(section));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 
 }

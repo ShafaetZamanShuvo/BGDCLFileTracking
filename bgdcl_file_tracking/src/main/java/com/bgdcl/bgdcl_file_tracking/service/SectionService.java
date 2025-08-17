@@ -19,4 +19,8 @@ public class SectionService {
     public List<Section> getSectionByDepartmentId(Long id) {
         return sectionRepository.findByDepartmentId(id);
     }
+
+    public Section addSection(Section section) {
+        return sectionRepository.save(section);
+    }
 }

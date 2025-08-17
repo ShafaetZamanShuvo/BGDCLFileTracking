@@ -4,9 +4,8 @@ import com.bgdcl.bgdcl_file_tracking.model.Designation;
 import com.bgdcl.bgdcl_file_tracking.service.DesignationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -19,7 +18,39 @@ public class DesignationController {
 
     @GetMapping("/all")
     public ResponseEntity<List<Designation>> getAllDesignation() {
-        List<Designation> designations = designationService.getAllDesignation();
-        return ResponseEntity.ok().body(designations);
+        return ResponseEntity.ok().body(designationService.getAllDesignation());
     }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping("/add-designation")
+    public ResponseEntity<Designation> addDesignation(@RequestBody Designation designation) {
+        try {
+            return ResponseEntity.ok().body(designationService.addDesignation(designation));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    //edit designation
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping("/edit-designation")
+    public ResponseEntity<Designation> editDesignation(@RequestBody Designation designation) {
+        try {
+            return ResponseEntity.ok().body(designationService.updateDesignation(designation));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+    
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteDesignation(@PathVariable Long id) {
+        try {
+            designationService.deleteDesignation(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error deleting designation: " + e.getMessage());
+        }
+    }
+
 }

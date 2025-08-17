@@ -16,4 +16,23 @@ public class DepartmentService {
     public List<Department> getAllDepartment() {
         return departmentRepository.findAll();
     }
+
+    public Department addDepartment(Department department) {
+        return departmentRepository.save(department);
+    }
+
+    public Department updateDepartment(Department department) {
+        Department existingDepartment = departmentRepository.findById(department.getId()).orElse(null);
+        if (existingDepartment != null) {
+            existingDepartment.setName(department.getName());
+            existingDepartment.setStatus(department.getStatus());
+            return departmentRepository.save(existingDepartment);
+        } else {
+            return null;
+        }
+    }
+
+    public void deleteDepartment(Long id) {
+        departmentRepository.deleteById(id);
+    }
 }
