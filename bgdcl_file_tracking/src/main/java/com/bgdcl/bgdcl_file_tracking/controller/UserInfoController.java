@@ -1,6 +1,7 @@
 package com.bgdcl.bgdcl_file_tracking.controller;
 
 import com.bgdcl.bgdcl_file_tracking.dto.UserInfoDTO;
+import com.bgdcl.bgdcl_file_tracking.model.User;
 import com.bgdcl.bgdcl_file_tracking.model.UserInfo;
 import com.bgdcl.bgdcl_file_tracking.service.UserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,11 @@ public class UserInfoController {
     @GetMapping("/get-all-users")
     public List<UserInfoDTO> getAllUserInfo() {
         return userDetailsService.getAllUserInfo();
+    }
+
+    @GetMapping("/get-all-user-ids")
+    public List<User> getAllUserIds() {
+        return userDetailsService.getAllUsers();
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")

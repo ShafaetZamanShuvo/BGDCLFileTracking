@@ -1,6 +1,7 @@
 package com.bgdcl.bgdcl_file_tracking.service;
 
 import com.bgdcl.bgdcl_file_tracking.dto.UserInfoDTO;
+import com.bgdcl.bgdcl_file_tracking.model.User;
 import com.bgdcl.bgdcl_file_tracking.model.UserInfo;
 import com.bgdcl.bgdcl_file_tracking.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,9 @@ public class UserDetailsService {
 
     @Autowired
     private ZoneRepository zoneRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public UserInfoDTO getUserDetails(Long userId) {
         // Get user info in a single database call
@@ -71,6 +75,10 @@ public class UserDetailsService {
             userInfoDTOList.add(getUserDetails(userInfo.getUserId()));
         }
         return userInfoDTOList;
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 
     public UserInfo addUserInfo(UserInfo userInfo) {

@@ -135,6 +135,8 @@ public class AuthController {
     return ResponseEntity.ok(userDetailsService.getUserDetails(userId));
   }
 
+
+
   private Long getCurrentUserId() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null || !authentication.isAuthenticated()) {
