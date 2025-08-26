@@ -23,4 +23,8 @@ public class SectionService {
     public Section addSection(Section section) {
         return sectionRepository.save(section);
     }
+
+    public Section updateSection(Section section) {
+        return sectionRepository.save(section);
+    }
 }

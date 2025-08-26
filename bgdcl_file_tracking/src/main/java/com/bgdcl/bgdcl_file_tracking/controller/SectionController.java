@@ -6,6 +6,7 @@ import com.bgdcl.bgdcl_file_tracking.service.DepartmentService;
 import com.bgdcl.bgdcl_file_tracking.service.SectionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,10 +32,22 @@ public class SectionController {
     }
 
     //add section
-    @GetMapping("/add-section")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping("/add-section")
     public ResponseEntity<Section> addSection(@RequestBody Section section) {
         try {
             return ResponseEntity.ok().body(sectionService.addSection(section));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    //edit section
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping("/edit-section")
+    public ResponseEntity<Section> editSection(@RequestBody Section section) {
+        try {
+            return ResponseEntity.ok().body(sectionService.updateSection(section));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
         }
