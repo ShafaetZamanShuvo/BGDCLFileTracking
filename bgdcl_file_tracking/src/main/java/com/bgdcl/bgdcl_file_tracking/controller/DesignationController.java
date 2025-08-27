@@ -16,7 +16,7 @@ public class DesignationController {
     @Autowired
     private DesignationService designationService;
 
-    @GetMapping("/all")
+    @GetMapping("/get-all-designations")
     public ResponseEntity<List<Designation>> getAllDesignation() {
         return ResponseEntity.ok().body(designationService.getAllDesignation());
     }
@@ -33,7 +33,7 @@ public class DesignationController {
 
     //edit designation
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PutMapping("/edit-designation")
+    @PostMapping("/edit-designation")
     public ResponseEntity<Designation> editDesignation(@RequestBody Designation designation) {
         try {
             return ResponseEntity.ok().body(designationService.updateDesignation(designation));

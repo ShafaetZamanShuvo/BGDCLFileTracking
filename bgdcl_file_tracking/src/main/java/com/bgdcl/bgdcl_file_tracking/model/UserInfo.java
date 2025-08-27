@@ -36,7 +36,7 @@ public class UserInfo implements Serializable {
     private Long zone_id;
 
     @Column(name = "status", nullable = false)
-    private String status = "Active";
+    private String status = "active";
 
     public Long getId() {
         return id;

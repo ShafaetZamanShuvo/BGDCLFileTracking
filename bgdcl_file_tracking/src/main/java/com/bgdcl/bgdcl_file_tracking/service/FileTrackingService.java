@@ -314,4 +314,26 @@ public class FileTrackingService {
         return updatedRows > 0;
     }
 
+    @Transactional
+    public FileTracking addFile(FileTrackingDTO file) {
+        FileTracking newFile = new FileTracking();
+        newFile.setOldCode(file.getOldCode());
+        newFile.setCurrentStatus(file.getCurrentStatus());
+        newFile.setCurrentDepartmentId(file.getCurrentDepartmentId());
+        newFile.setPendingAcceptance(false);
+        newFile.setLastUpdated(LocalDateTime.now());
+        FileTracking savedFile = fileTrackingRepository.save(newFile);
+
+        //save Customer File
+        CustomerFile customerFile = new CustomerFile();
+        customerFile.setOldCode(file.getOldCode());
+        customerFile.setCustomerCode(file.getCustomerCode());
+        customerFile.setCustomerName(file.getCustomerName());
+        customerFile.setZone(file.getZone());
+        customerFile.setFileExists(file.getFileExists());
+        customerFileRepository.save(customerFile);
+
+        return savedFile;
+
+    }
 }

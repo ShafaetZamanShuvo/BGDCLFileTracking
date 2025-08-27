@@ -2,8 +2,11 @@ package com.bgdcl.bgdcl_file_tracking.dto;
 
 public class UserInfoDTO {
     private Long userId;
+    private String username;
+    private String email;
     private String fullName;
     private String designation;
+    private Long designationId;
     private String department;
     private Long departmentId;
     private String section;
@@ -72,6 +75,32 @@ public class UserInfoDTO {
 
     public Long getSectionId() {
         return sectionId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public Long getDesignationId() {
+        return designationId;
+    }
+
+    public void setDesignationId(Long designationId) {
+        this.designationId = designationId;
+    }
+
+
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public void setSectionId(Long sectionId) {

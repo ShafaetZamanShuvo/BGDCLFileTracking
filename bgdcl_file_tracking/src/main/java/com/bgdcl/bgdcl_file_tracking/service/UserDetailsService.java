@@ -47,8 +47,16 @@ public class UserDetailsService {
         userInfoDTO.setDepartmentId(userInfo.getDepartmentId());
         userInfoDTO.setSectionId(userInfo.getSectionId());
         userInfoDTO.setZoneId(userInfo.getZone_id());
+        userInfoDTO.setDesignationId(userInfo.getDesignationId());
+
+//        get email and username
+        User user = userRepository.findById(userId).orElse(null);
+        assert user != null;
+        userInfoDTO.setEmail(user.getEmail());
+        userInfoDTO.setUsername(user.getUsername());
 
         // Fetch related entities in parallel using Optional
+        //set
         Optional.ofNullable(userInfo.getDesignationId())
                 .flatMap(designationRepository::findById)
                 .ifPresent(designation -> userInfoDTO.setDesignation(designation.getName()));

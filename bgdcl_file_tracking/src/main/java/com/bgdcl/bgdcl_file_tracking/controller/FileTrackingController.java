@@ -31,6 +31,11 @@ public class FileTrackingController {
     @Autowired
     private UserDetailsService userDetailsService;
 
+    @PostMapping("/entry")
+    public ResponseEntity<FileTracking> addFile(@RequestBody FileTrackingDTO file) {
+        return ResponseEntity.ok(fileTrackingService.addFile(file));
+    }
+
     // Get file status
     @GetMapping("/{code}/status")
     public ResponseEntity<Map<String, Object>> getFileStatus(@PathVariable String code) {

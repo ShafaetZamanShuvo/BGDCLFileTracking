@@ -25,6 +25,7 @@ public class FileTrackingDTO implements Serializable {
     private String customerCode;
     private String customerName;
     private String zone;
+    private String fileExists;
     
     // Constructor to map from entities
     public FileTrackingDTO(FileTracking fileTracking, CustomerFile customerFile) {
@@ -39,6 +40,7 @@ public class FileTrackingDTO implements Serializable {
             this.customerCode = customerFile.getCustomerCode();
             this.customerName = customerFile.getCustomerName();
             this.zone = customerFile.getZone();
+            this.fileExists = customerFile.getFileExists();
         }
     }
 
@@ -52,6 +54,14 @@ public class FileTrackingDTO implements Serializable {
 
     public String getOldCode() {
         return oldCode;
+    }
+
+    public String getFileExists() {
+        return fileExists;
+    }
+
+    public void setFileExists(String fileExists) {
+        this.fileExists = fileExists;
     }
 
     public void setOldCode(String oldCode) {
