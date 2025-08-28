@@ -36,6 +36,17 @@ public class FileTrackingController {
         return ResponseEntity.ok(fileTrackingService.addFile(file));
     }
 
+    @GetMapping ("/get-all-files")
+    public Page<FileTrackingDTO> getFiles(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "lastUpdated") String sort,
+            @RequestParam(defaultValue = "desc") String dir,
+            @RequestParam(defaultValue = "") String search
+    ) {
+        return fileTrackingService.getAllFiles(page, size, sort, dir, search);
+    }
+
     // Get file status
     @GetMapping("/{code}/status")
     public ResponseEntity<Map<String, Object>> getFileStatus(@PathVariable String code) {

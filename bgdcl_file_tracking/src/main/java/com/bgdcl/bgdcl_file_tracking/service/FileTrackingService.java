@@ -7,9 +7,7 @@ import com.bgdcl.bgdcl_file_tracking.model.*;
 import com.bgdcl.bgdcl_file_tracking.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -336,4 +334,30 @@ public class FileTrackingService {
         return savedFile;
 
     }
+
+    public Page<FileTrackingDTO> getAllFiles(int page, int size, String sortBy, String sortDir, String search) {
+        try {
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+            Pageable pageable = PageRequest.of(page, size, sort);
+
+            Page<FileTracking> filesPage = fileTrackingRepository.findAll(pageable);
+            List<CustomerFile> customerFiles = customerFileRepository.findAll(); // no pageable
+
+            List<FileTrackingDTO> filesDTO = filesPage.getContent().stream()
+                    .map(fileTracking -> {
+                        CustomerFile customerFile = customerFiles.stream()
+                                .filter(cf -> cf.getOldCode().equals(fileTracking.getOldCode()))
+                                .findFirst()
+                                .orElse(null);
+                        return new FileTrackingDTO(fileTracking, customerFile);
+                    })
+                    .collect(Collectors.toList());
+
+            return new PageImpl<>(filesDTO, pageable, filesPage.getTotalElements());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Page.empty();
+        }
+    }
+
 }
