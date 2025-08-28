@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -35,6 +36,22 @@ public class FileTrackingController {
     public ResponseEntity<FileTracking> addFile(@RequestBody FileTrackingDTO file) {
         return ResponseEntity.ok(fileTrackingService.addFile(file));
     }
+
+    @PostMapping("/bulk-upload")
+    public ResponseEntity<?> bulkUpload(@RequestParam("file") MultipartFile file) {
+        try {
+            List<FileTrackingDTO> files = fileTrackingService.bulkUpload(file);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "totalRecords", files.size()
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
 
     @GetMapping ("/get-all-files")
     public Page<FileTrackingDTO> getFiles(

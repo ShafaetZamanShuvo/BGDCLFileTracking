@@ -26,6 +26,8 @@ public class FileTrackingDTO implements Serializable {
     private String customerName;
     private String zone;
     private String fileExists;
+
+
     
     // Constructor to map from entities
     public FileTrackingDTO(FileTracking fileTracking, CustomerFile customerFile) {

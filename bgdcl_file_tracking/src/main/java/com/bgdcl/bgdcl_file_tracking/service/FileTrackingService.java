@@ -6,10 +6,19 @@ import com.bgdcl.bgdcl_file_tracking.exception.ResourceNotFoundException;
 import com.bgdcl.bgdcl_file_tracking.model.*;
 import com.bgdcl.bgdcl_file_tracking.repository.*;
 import jakarta.transaction.Transactional;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -359,5 +368,87 @@ public class FileTrackingService {
             return Page.empty();
         }
     }
+
+
+
+    @Transactional
+    public List<FileTrackingDTO> bulkUpload(MultipartFile file) throws IOException {
+        List<FileTrackingDTO> uploadedFiles = new ArrayList<>();
+        List<FileTracking> batchFiles = new ArrayList<>();
+        List<CustomerFile> batchCustomerFiles = new ArrayList<>();
+        final int BATCH_SIZE = 5000; // save in batches of 5000
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // skip header
+
+                FileTrackingDTO dto = new FileTrackingDTO();
+                dto.setOldCode(getCellValue(row.getCell(0)));
+                dto.setCustomerCode(getCellValue(row.getCell(1)));
+                dto.setCustomerName(getCellValue(row.getCell(2)));
+                dto.setZone(getCellValue(row.getCell(3)));
+                String statusStr = getCellValue(row.getCell(4)).trim().toLowerCase();
+                FileStatus status = switch (statusStr) {
+                    case "in" -> FileStatus.in;
+                    case "out" -> FileStatus.out;
+                    case "pending" -> FileStatus.pending;
+                    case "requested" -> FileStatus.requested; // or add "approved" to enum if you want
+                    default -> null; // or throw an exception if invalid
+                };
+                dto.setCurrentStatus(status);
+                dto.setCurrentDepartmentId(Integer.parseInt(getCellValue(row.getCell(5))));
+                dto.setFileExists(getCellValue(row.getCell(6)));
+                dto.setPendingAcceptance(Boolean.parseBoolean(getCellValue(row.getCell(7))));
+
+                // Create entities
+                FileTracking ft = new FileTracking();
+                ft.setOldCode(dto.getOldCode());
+                ft.setCurrentStatus(dto.getCurrentStatus());
+                ft.setCurrentDepartmentId(dto.getCurrentDepartmentId());
+                ft.setPendingAcceptance(dto.isPendingAcceptance());
+                ft.setLastUpdated(LocalDateTime.now());
+                batchFiles.add(ft);
+
+                CustomerFile cf = new CustomerFile();
+                cf.setOldCode(dto.getOldCode());
+                cf.setCustomerCode(dto.getCustomerCode());
+                cf.setCustomerName(dto.getCustomerName());
+                cf.setZone(dto.getZone());
+                cf.setFileExists(dto.getFileExists());
+                batchCustomerFiles.add(cf);
+
+                uploadedFiles.add(dto);
+
+                // Batch save
+                if (batchFiles.size() >= BATCH_SIZE) {
+                    fileTrackingRepository.saveAll(batchFiles);
+                    customerFileRepository.saveAll(batchCustomerFiles);
+                    batchFiles.clear();
+                    batchCustomerFiles.clear();
+                }
+            }
+
+            // Save remaining records
+            if (!batchFiles.isEmpty()) {
+                fileTrackingRepository.saveAll(batchFiles);
+                customerFileRepository.saveAll(batchCustomerFiles);
+            }
+        }
+
+        return uploadedFiles;
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING: return cell.getStringCellValue().trim();
+            case NUMERIC: return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            default: return "";
+        }
+    }
+
 
 }
